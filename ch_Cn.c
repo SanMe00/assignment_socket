@@ -38,6 +38,8 @@ int main(){
 		//입력받은 메세지가 quit 이면 break, sendBuffer에 받은 내용의 앞 4바이트가 quit가 같다면.
 		if(strncasecmp(snBf,"quit",4)==0)
 			break;
+		else if(strncasecmp(snBf,"kill server",11)==0)
+			break;
 		n = read(c_socket, rcvBf, sizeof(rcvBf)); 
 		//서버에서 보내준 메세지를 rcvBuffer에 저장하고, 메세지의 길이를 리턴
 		//만약 read에 실패하면, -1을 리턴

@@ -13,6 +13,8 @@ int main(){
 	struct sockaddr_in s_addr, c_addr;
 	int len;
 	int n;
+	int chlen; //strlen -- 처리용
+	char chlen_str[100]; //chlen을 write 하는 도중 sprintf을 위한 변
 
 	// 1. 서버 소켓 생성
 	//서버 소켓 = 클라이언트의 접속 요청을 처리(허용)해 주기 위한 소켓
@@ -61,11 +63,17 @@ int main(){
 				write(c_socket,snBf,strlen(snBf));
 			}
 			else if(strncasecmp(rcvBf,"이름이 뭐야?\n",n)==0||strncasecmp(rcvBf,"이름이뭐야?\n",n)==0){
-				strcpy(snBf,"내 이름은 챗봇이얌.\n");
+				strcpy(snBf,"내 이름은 챗봇이야.\n");
 				write(c_socket,snBf,strlen(snBf));			
 			}
 			else if(strncasecmp(rcvBf,"몇 살이야?\n",n)==0||strncasecmp(rcvBf,"몇살이야?\n",n)==0){
-				strcpy(snBf,"나는 30살이얌.\n");
+				strcpy(snBf,"나는 1살이야!.\n");
+				write(c_socket,snBf,strlen(snBf));
+			}
+			else if(strncasecmp(rcvBf,"strlen",6)==0){
+				chlen=strlen(rcvBf)-8;
+				sprintf(chlen_str,"문자열의 길이= %d\n",chlen);
+				strcpy(snBf,chlen_str);
 				write(c_socket,snBf,strlen(snBf));
 			}
 			else
