@@ -16,9 +16,8 @@ int main(){
 	int chlen; //strlen -- 처리용
 	char chlen_str[100]; //chlen을 write 하는 도중 sprintf을 위한 변수 
 	int chcmp; //	strcmp -- 처리용
+	int result;
 	char cmp_str[100];	//cmp결과 담을 변수
-
-	int compareCmp(char * objectBuff); //strcmp 실행을 위한 함수
 
 	// 1. 서버 소켓 생성
 	//서버 소켓 = 클라이언트의 접속 요청을 처리(허용)해 주기 위한 소켓
@@ -67,11 +66,11 @@ int main(){
 				write(c_socket,snBf,strlen(snBf));
 			}
 			else if(strncasecmp(rcvBf,"이름이 뭐야?\n",n)==0||strncasecmp(rcvBf,"이름이뭐야?\n",n)==0){
-				strcpy(snBf,"내 이름은 챗봇이야.\n");
+				strcpy(snBf,"제 이름은 챗봇이에요.\n");
 				write(c_socket,snBf,strlen(snBf));			
 			}
 			else if(strncasecmp(rcvBf,"몇 살이야?\n",n)==0||strncasecmp(rcvBf,"몇살이야?\n",n)==0){
-				strcpy(snBf,"나는 1살이야!.\n");
+				strcpy(snBf,"저는 1살이에요!\n");
 				write(c_socket,snBf,strlen(snBf));
 			}
 			else if(strncasecmp(rcvBf,"strlen",6)==0){
@@ -81,14 +80,25 @@ int main(){
 				write(c_socket,snBf,strlen(snBf));
 			}
 			else if(strncasecmp(rcvBf,"strcmp",6)==0){
-				chcmp= compareCmp(rcvBf);
-				if(chcmp==0){
-					sprintf(cmp_str,"비교결과= %d(일치)\n",chcmp);
+				char *ptr=strtok(rcvBf," ");
+				ptr=strtok(NULL," ");
+				char *str1=ptr;
+				ptr=strtok(NULL," ");
+				char *str2=ptr;
+				str2[strlen(str2)-1]='\0';
+
+				printf("%s %d ",str1,strlen(str1));
+				printf("%s %d\n",str2,strlen(str2));
+
+				if (strcmp(str1,str2)==0){
+					result=0;
+					sprintf(cmp_str,"비교결과= %d ---> [일치]\n",result);
 					strcpy(snBf,cmp_str);
 					write(c_socket,snBf,strlen(snBf));
 				}
-				else if(chcmp!=0){
-					sprintf(cmp_str,"비교결과= %d(불일치)\n",chcmp);
+				else if(strcmp(str1,str2)!=0){
+					result=strcmp(str1,str2);
+					sprintf(cmp_str,"비교결과= %d ---> [불일치]\n",result);
 					strcpy(snBf,cmp_str);
 					write(c_socket,snBf,strlen(snBf));
 				}
@@ -99,61 +109,9 @@ int main(){
 		close(c_socket);
 		if(strncasecmp(rcvBf,"kill server",11)==0)
 			break;
-
 	}
 	close(s_socket);
 	return 0;	
 }
 
-// strcmp를 위해 작성한 함수. 입력받은 문장을 공백기준으로 둘로 나눠 비교한다.
-int compareCmp(char * objectBuff){
-	int lcv=7; //loop control value, strcmp와 " " 제외한 7번부터 시작.
-	int length=strlen(rcvBf);	// 마지막  " " 포함한 전체길이
-	int stop1=0; // 분기점 기록
-	int stop2=0; // 두번째 분기점 기록
-	int fin;
-	char obj1[100]={0,};
-	char obj2[100]={0,};
-
-	while(lcv<length){
-		if(objectBuff[lcv]==' '){
-			stop1=lcv;
-		}
-		else if(&objectBuff[lcv]=="\0"){
-			stop2=lcv;
-		}
-		lcv++;
-	}
-
-	lcv=0;	//재활용을 위한 초기화 
-
-	while(lcv<stop1){
-		//strcat(obj1,objectBuff[lcv]); 문자열과 문자 관계라 작동안함
-		int i=strlen(obj1);
-		obj1[i]=objectBuff[lcv];
-		lcv++;
-	}
-
-	lcv++;	//stop1지점을 건너 다음 순번부터 시작
-
-	while(lcv<stop2){
-		//strcat(obj2,objectBuff[lcv]);
-		int i=strlen(obj2);
-		obj2[i]=objectBuff[lcv];
-		lcv++;
-	}
-	
-	strcat(obj1,"\0");
-	strcat(obj2,"\0");
-
-	if(strcmp(obj1,obj2)==0){
-		fin=0;	
-	}
-	else if (strcmp(obj1,obj2)!=0){
-		fin=strcmp(obj1,obj2);
-		printf("%d %d\n",strlen(obj1),strlen(obj2));
-	}
-	
-	return fin;
-}
 
