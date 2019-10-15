@@ -57,62 +57,50 @@ int main(){
 		while(1){	
 			//읽어올 때는 정확한 크기를 모르기 때문에 sizeof로 버퍼 전체의 크기만큼 읽어들이지만, read 할 때는 명확한 길이를 알기 때문에 strlen을 이용한다.
 			n=read(c_socket, rcvBf, sizeof(rcvBf));
-			//필요없는듯? rcvBf[n]='\0'; //개행문자포함시켜서 오류막기
-			printf("Received Data: %s\n",rcvBf);  // 체크용도
-
+			rcvBf[n-1]='\0'; //개행문자포함를 삭제! strcmp에서 오류나는 것 해결
+			printf("Received Data: %s\n",rcvBf);  // 체크용도용
 			if(strncasecmp(rcvBf,"quit",4)==0 || strncasecmp(rcvBf,"kill server",11)==0)
 				break;
 			//아래처럼 ! 이용하여 표현가능
 			//원래는 안녕하세요\n을 strncasecmp의 두 번째 인자로 넣었으나 위에서 코드를 제거하니 안해도 되는것같다.
 			else if(!strncasecmp(rcvBf,"안녕하세요",strlen("안녕하세요"))|| !strncasecmp(rcvBf,"안녕하세요.",strlen("안녕하세요."))){
 				strcpy(snBf,"안녕하세요. 만나서 반가워요!\n");
-				//write(c_socket,snBf,strlen(snBf));
 			}
 			else if(!strncasecmp(rcvBf,"이름이 뭐야?",strlen("이름이 뭐야?"))|| !strncasecmp(rcvBf,"이름이뭐야?",strlen("이름이뭐야?"))){
-				strcpy(snBf,"제 이름은 챗봇이에요.\n");
-				//write(c_socket,snBf,strlen(snBf));			
+				strcpy(snBf,"제 이름은 챗봇이에요.\n");			
 			}
 			else if(strncasecmp(rcvBf,"몇 살이야?\n",n)==0||strncasecmp(rcvBf,"몇살이야?\n",n)==0){
 				strcpy(snBf,"저는 1살이에요!\n");
-				//write(c_socket,snBf,strlen(snBf));
 			}
-			else if(strncasecmp(rcvBf,"strlen",6)==0){
-				chlen=strlen(rcvBf)-8;
-				sprintf(chlen_str,"문자열의 길이= %d\n",chlen);
+			else if(!strncasecmp(rcvBf,"strlen ",strlen("strlen "))){
+				chlen=strlen(rcvBf)-7;
+				sprintf(chlen_str,"문자열의 길이는 %d입니다.\n",chlen);	//strlen(chlen_str)-7 교수님 방식, 개행제외하려면 -1 추가라고하신다
 				strcpy(snBf,chlen_str);
-				//write(c_socket,snBf,strlen(snBf));
 			}
-			else if(strncasecmp(rcvBf,"strcmp",6)==0){
+			else if(!strncasecmp(rcvBf,"strcmp ",strlen("strcmp "))){
 				char *ptr=strtok(rcvBf," ");
-				ptr=strtok(NULL," ");
-				char *str1=ptr;
-				ptr=strtok(NULL," ");
-				char *str2=ptr;
-				str2[strlen(str2)-1]='\0';
-
-				printf("%s %d ",str1,strlen(str1));
-				printf("%s %d\n",str2,strlen(str2));
-
-				if (strcmp(str1,str2)==0){
-					result=0;
-					sprintf(cmp_str,"비교결과= %d ---> [일치]\n",result);
-					strcpy(snBf,cmp_str);
-					//write(c_socket,snBf,strlen(snBf));
+				char *str[3];
+				int index=0;
+				while(ptr != NULL){
+					str[index]=ptr;
+					printf("str[%d] = %s\n",index,str[index]);
+					index++;
+					ptr=strtok(NULL," ");
 				}
-				else if(strcmp(str1,str2)!=0){
-					result=strcmp(str1,str2);
-					sprintf(cmp_str,"비교결과= %d ---> [불일치]\n",result);
-					strcpy(snBf,cmp_str);
-					//write(c_socket,snBf,strlen(snBf));
-				}
+				if(index < 3)
+					strcpy(snBf,"문자열 비교를 위해서는 2개의 문자열이 필요합니다.");
+				//str2[strlen(str2)-1]='\0'; 원래 방식에서 개행문자 처리 
+				else if(!strcmp(str[1],str[2]))
+					sprintf(snBf,"%s와 %s는 같은 문자열입니다.",str[1],str[2]);
+				else
+					sprintf(snBf,"%s와 %s는 다른 문자열입니다.",str[1],str[2]);	//sprintf는 버퍼에 저장하는 것일 뿐 실제로 출력하려면 printf 필요하다.
 			}
 			else
-				strcpy(snBf,"무슨말인지 모르겠네요..\n");
-				//write(c_socket, rcvBf, n); //모든 조건을 만족하지 않는경우 => 에코
+				strcpy(snBf,"무슨말인지 모르겠네요..\n");	// 어떤 경우에도 해당하지 않는 경우
 			write(c_socket,snBf,strlen(snBf));	// write는 이렇게 한번에 가능
 		}
 		close(c_socket);
-		if(strncasecmp(rcvBf,"kill server",11)==0)
+		if(!strncasecmp(rcvBf,"kill server",strlen("kill server")))
 			break;
 	}
 	close(s_socket);
