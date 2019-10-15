@@ -95,6 +95,29 @@ int main(){
 				else
 					sprintf(snBf,"%s와 %s는 다른 문자열입니다.",str[1],str[2]);	//sprintf는 버퍼에 저장하는 것일 뿐 실제로 출력하려면 printf 필요하다.
 			}
+			else if(!strncasecmp(rcvBf,"readfile ",strlen("readfile "))){
+				FILE *fp;
+				char bf[255];
+				char *ptr=strtok(rcvBf," ");
+				char *str;
+				str=strtok(NULL," ");
+
+				fp=fopen(str,"r");
+				if(fp){
+					while(fgets(bf,255,(FILE *)fp)){
+						write(c_socket,bf,strlen(bf));
+					}
+					fclose(fp); //core dumped 오류는 if(fp) 즉, fp가 존재할 때 기준인데, 만약 fp=null이면 열린적이없는데 닫으려하기때문에 뜬 것.
+								   // 때문에 fclose 위치를 if 안쪽으로 옮겨주었다. 
+				}
+				else{
+					strcpy(snBf,"파일이 존재하지 않습니다.\n");
+					write(c_socket,snBf,strlen(snBf));			
+					//fclose(fp); 해주면 코어덤프 뜨는데 아마도 열린적이없는데 닫으려 해서 그런 듯
+				}
+				continue;	// 마지막 줄에 snBf를 write 하는 구문이 있기 때문에 내부에서 이미 write 했기에 중복되는 상황을 피하기 위해서
+			}
+
 			else
 				strcpy(snBf,"무슨말인지 모르겠네요..\n");	// 어떤 경우에도 해당하지 않는 경우
 			write(c_socket,snBf,strlen(snBf));	// write는 이렇게 한번에 가능
