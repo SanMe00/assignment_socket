@@ -7,6 +7,8 @@
 
 char snBf[100];
 char rcvBf[100];
+// sizeof(buffer) => 100 배열의 크기를 의미
+// strlen(buffer) => 만약 hi라면 2. 내용의 길이를 의미
 
 int main(){
 	int c_socket, s_socket;
@@ -53,31 +55,32 @@ int main(){
 		printf("클라이언트 접속 허용\n");
 
 		while(1){	
-
+			//읽어올 때는 정확한 크기를 모르기 때문에 sizeof로 버퍼 전체의 크기만큼 읽어들이지만, read 할 때는 명확한 길이를 알기 때문에 strlen을 이용한다.
 			n=read(c_socket, rcvBf, sizeof(rcvBf));
-			rcvBf[n]='\0'; //개행문자포함시켜서 오류막기
+			//필요없는듯? rcvBf[n]='\0'; //개행문자포함시켜서 오류막기
 			printf("Received Data: %s\n",rcvBf);  // 체크용도
 
 			if(strncasecmp(rcvBf,"quit",4)==0 || strncasecmp(rcvBf,"kill server",11)==0)
 				break;
-
-			if(strncasecmp(rcvBf,"안녕하세요\n",n)==0||strncasecmp(rcvBf,"안녕하세요.\n",n)==0){
+			//아래처럼 ! 이용하여 표현가능
+			//원래는 안녕하세요\n을 strncasecmp의 두 번째 인자로 넣었으나 위에서 코드를 제거하니 안해도 되는것같다.
+			else if(!strncasecmp(rcvBf,"안녕하세요",strlen("안녕하세요"))|| !strncasecmp(rcvBf,"안녕하세요.",strlen("안녕하세요."))){
 				strcpy(snBf,"안녕하세요. 만나서 반가워요!\n");
-				write(c_socket,snBf,strlen(snBf));
+				//write(c_socket,snBf,strlen(snBf));
 			}
-			else if(strncasecmp(rcvBf,"이름이 뭐야?\n",n)==0||strncasecmp(rcvBf,"이름이뭐야?\n",n)==0){
+			else if(!strncasecmp(rcvBf,"이름이 뭐야?",strlen("이름이 뭐야?"))|| !strncasecmp(rcvBf,"이름이뭐야?",strlen("이름이뭐야?"))){
 				strcpy(snBf,"제 이름은 챗봇이에요.\n");
-				write(c_socket,snBf,strlen(snBf));			
+				//write(c_socket,snBf,strlen(snBf));			
 			}
 			else if(strncasecmp(rcvBf,"몇 살이야?\n",n)==0||strncasecmp(rcvBf,"몇살이야?\n",n)==0){
 				strcpy(snBf,"저는 1살이에요!\n");
-				write(c_socket,snBf,strlen(snBf));
+				//write(c_socket,snBf,strlen(snBf));
 			}
 			else if(strncasecmp(rcvBf,"strlen",6)==0){
 				chlen=strlen(rcvBf)-8;
 				sprintf(chlen_str,"문자열의 길이= %d\n",chlen);
 				strcpy(snBf,chlen_str);
-				write(c_socket,snBf,strlen(snBf));
+				//write(c_socket,snBf,strlen(snBf));
 			}
 			else if(strncasecmp(rcvBf,"strcmp",6)==0){
 				char *ptr=strtok(rcvBf," ");
@@ -94,17 +97,19 @@ int main(){
 					result=0;
 					sprintf(cmp_str,"비교결과= %d ---> [일치]\n",result);
 					strcpy(snBf,cmp_str);
-					write(c_socket,snBf,strlen(snBf));
+					//write(c_socket,snBf,strlen(snBf));
 				}
 				else if(strcmp(str1,str2)!=0){
 					result=strcmp(str1,str2);
 					sprintf(cmp_str,"비교결과= %d ---> [불일치]\n",result);
 					strcpy(snBf,cmp_str);
-					write(c_socket,snBf,strlen(snBf));
+					//write(c_socket,snBf,strlen(snBf));
 				}
 			}
 			else
-				write(c_socket, rcvBf, n); //모든 조건을 만족하지 않는경우 => 에코
+				strcpy(snBf,"무슨말인지 모르겠네요..\n");
+				//write(c_socket, rcvBf, n); //모든 조건을 만족하지 않는경우 => 에코
+			write(c_socket,snBf,strlen(snBf));	// write는 이렇게 한번에 가능
 		}
 		close(c_socket);
 		if(strncasecmp(rcvBf,"kill server",11)==0)
