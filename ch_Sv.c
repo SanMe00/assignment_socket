@@ -95,7 +95,7 @@ int main(){
 				else
 					sprintf(snBf,"%s와 %s는 다른 문자열입니다.",str[1],str[2]);	//sprintf는 버퍼에 저장하는 것일 뿐 실제로 출력하려면 printf 필요하다.
 			}
-			else if(!strncasecmp(rcvBf,"readfile ",strlen("readfile "))){
+			else if(!strncasecmp(rcvBf,"readfile ",strlen("readfile "))){	// 파일 출력
 				FILE *fp;
 				char bf[255];
 				char *ptr=strtok(rcvBf," ");
@@ -117,7 +117,11 @@ int main(){
 				}
 				continue;	// 마지막 줄에 snBf를 write 하는 구문이 있기 때문에 내부에서 이미 write 했기에 중복되는 상황을 피하기 위해서
 			}
-
+			else if(!strncasecmp(rcvBf,"exec ",strlen("exec "))){	// 명령어 실행 여부
+				char *ptr=strtok(rcvBf," ");
+				char *str=strtok(NULL," ");
+				
+			}
 			else
 				strcpy(snBf,"무슨말인지 모르겠네요..\n");	// 어떤 경우에도 해당하지 않는 경우
 			write(c_socket,snBf,strlen(snBf));	// write는 이렇게 한번에 가능
