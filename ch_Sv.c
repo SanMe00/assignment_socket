@@ -69,7 +69,7 @@ int main(){
 			else if(!strncasecmp(rcvBf,"이름이 뭐야?",strlen("이름이 뭐야?"))|| !strncasecmp(rcvBf,"이름이뭐야?",strlen("이름이뭐야?"))){
 				strcpy(snBf,"제 이름은 챗봇이에요.\n");			
 			}
-			else if(strncasecmp(rcvBf,"몇 살이야?\n",n)==0||strncasecmp(rcvBf,"몇살이야?\n",n)==0){
+			else if(!strncasecmp(rcvBf,"몇 살이야?\n",strlen("몇 살이야?"))||!strncasecmp(rcvBf,"몇살이야?\n",strlen("몇살이야?"))){
 				strcpy(snBf,"저는 1살이에요!\n");
 			}
 			else if(!strncasecmp(rcvBf,"strlen ",strlen("strlen "))){
@@ -119,8 +119,16 @@ int main(){
 			}
 			else if(!strncasecmp(rcvBf,"exec ",strlen("exec "))){	// 명령어 실행 여부
 				char *ptr=strtok(rcvBf," ");
-				char *str=strtok(NULL," ");
-				
+				char *str=strtok(NULL,"\0");
+				printf("Command Call: %s\n",str);
+				if(!system(str)){
+					printf("Command is Executed\n");
+					sprintf(snBf,"[%s] command is executed!",str);
+				}
+				else{
+					printf("Command is Failed\n");
+					sprintf(snBf,"[%s] command is failed!",str);
+				}
 			}
 			else
 				strcpy(snBf,"무슨말인지 모르겠네요..\n");	// 어떤 경우에도 해당하지 않는 경우
