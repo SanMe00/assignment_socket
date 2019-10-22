@@ -4,9 +4,10 @@
 #include <string.h>
 
 #define PORT 10000
+#define BUFSIZE 10000
 
-char snBf[100];
-char rcvBf[100];
+char snBf[BUFSIZE];
+char rcvBf[BUFSIZE];
 // sizeof(buffer) => 100 배열의 크기를 의미
 // strlen(buffer) => 만약 hi라면 2. 내용의 길이를 의미
 
@@ -74,8 +75,9 @@ int main(){
 			}
 			else if(!strncasecmp(rcvBf,"strlen ",strlen("strlen "))){
 				chlen=strlen(rcvBf)-7;
-				sprintf(chlen_str,"문자열의 길이는 %d입니다.\n",chlen);	//strlen(chlen_str)-7 교수님 방식, 개행제외하려면 -1 추가라고하신다
-				strcpy(snBf,chlen_str);
+				sprintf(snBf,"문자열의 길이는 %d입니다.\n",chlen);	
+				//sprintf(chlen_str,"문자열의 길이는 %d입니다.\n",strlen(rcvBf)-7); 교수님 방식, 개행제외하려면 -1 추가라고하신다.
+				//strcpy(snBf,chlen_str); //불필요, sprintf에서 한 번에 처리 가능. 반면교사로 남겨놓음
 			}
 			else if(!strncasecmp(rcvBf,"strcmp ",strlen("strcmp "))){
 				char *ptr=strtok(rcvBf," ");
@@ -96,32 +98,43 @@ int main(){
 					sprintf(snBf,"%s와 %s는 다른 문자열입니다.",str[1],str[2]);	//sprintf는 버퍼에 저장하는 것일 뿐 실제로 출력하려면 printf 필요하다.
 			}
 			else if(!strncasecmp(rcvBf,"readfile ",strlen("readfile "))){	// 파일 출력
-				FILE *fp;
-				char bf[255];
 				char *ptr=strtok(rcvBf," ");
-				char *str;
-				str=strtok(NULL," ");
-
-				fp=fopen(str,"r");
-				if(fp){
-					while(fgets(bf,255,(FILE *)fp)){
-						write(c_socket,bf,strlen(bf));
-					}
-					fclose(fp); //core dumped 오류는 if(fp) 즉, fp가 존재할 때 기준인데, 만약 fp=null이면 열린적이없는데 닫으려하기때문에 뜬 것.
-								   // 때문에 fclose 위치를 if 안쪽으로 옮겨주었다. 
+				char *str[10];
+				int cnt=0;
+				while(ptr!=NULL){
+					str[cnt]=ptr;
+					cnt++;
+					ptr=strtok(NULL," ");
+				}
+				if(cnt < 2){
+					strcpy(snBf,"파일명을 입력해주세요");
 				}
 				else{
-					strcpy(snBf,"파일이 존재하지 않습니다.\n");
-					write(c_socket,snBf,strlen(snBf));			
-					//fclose(fp); 해주면 코어덤프 뜨는데 아마도 열린적이없는데 닫으려 해서 그런 듯
-				}
-				continue;	// 마지막 줄에 snBf를 write 하는 구문이 있기 때문에 내부에서 이미 write 했기에 중복되는 상황을 피하기 위해서
+					FILE *fp=fopen(str[1],"r");
+					if(fp){
+						char bf[BUFSIZE];	//파일내용을 저장할 변수
+						memset(snBf,0,BUFSIZE);	//snBf초기화
+						while(fgets(bf,BUFSIZE,(FILE *)fp)){
+							strcat(snBf,bf);	//여러줄의 내용을 하나의 buffer에 저장하기 위해 strcat()이용
+							//write(c_socket,bf,strlen(bf));
+						}
+						fclose(fp); //core dumped 오류는 if(fp) 즉, fp가 존재할 때 기준인데, 만약 fp=null이면 열린적이없는데 닫으려하기때문에 뜬 것.
+									   // 때문에 fclose 위치를 if 안쪽으로 옮겨주었다. 
+					}
+					else{
+						strcpy(snBf,"파일이 존재하지 않습니다.\n");
+						//write(c_socket,snBf,strlen(snBf));			
+						//fclose(fp); 해주면 코어덤프 뜨는데 아마도 열린적이없는데 닫으려 해서 그런 듯
+						}
+					//continue;	// 마지막 줄에 snBf를 write 하는 구문이 있기 때문에 내부에서 이미 write 했기에 중복되는 상황을 피하기 위해서
+					}
 			}
 			else if(!strncasecmp(rcvBf,"exec ",strlen("exec "))){	// 명령어 실행 여부
 				char *ptr=strtok(rcvBf," ");
 				char *str=strtok(NULL,"\0");
+				memset(snBf,0,BUFSIZE);
 				printf("Command Call: %s\n",str);
-				if(!system(str)){
+				if(!system(str)){	//한 번 실행을 이미 하는 것이고, 그 값을 조건판별한다. 그러므로 시스템함수 한 번 이용 됨.
 					printf("Command is Executed\n");
 					sprintf(snBf,"[%s] command is executed!",str);
 				}
