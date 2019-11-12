@@ -3,6 +3,7 @@
 #include <netinet/in.h>
 #include <sys/socket.h>
 #include <string.h>
+#include<stdlib.h>	//exit warning을 방지
 
 #define PORT 10000
 #define BUFSIZE 10000
@@ -54,18 +55,23 @@ int main(){
 		len = sizeof(c_addr);
 		printf("클라이언트 접속을 기다리는 중....\n");
 		c_socket = accept(s_socket, (struct sockaddr *)&c_addr, &len);
-		int pid;
+		printf("/client is connected\n");
+		printf("클라이언트 접속 허용\n");
+		int pid=fork();
 		//클라이언트의 요청이 오면 허용(accept)해 주고, 해당 클라이언트와 통신할 수 있도록 클라이언트 소켓(c_socket)을 반환함.
-		if((pid=fork())>0){
-			printf("/client is connected\n");
-			printf("클라이언트 접속 허용\n");
+		if(pid>0){	//부모프로세스
 			close(c_socket);	//c_socket 같은 파일 디스크립터도 전부 복사해서 별개의 것으로 이용한다. 중복이 아님!
-			continue;
+			continue;	//continue만 해줘도 된다.
 		}
-		else if(pid==0){
-			close(s_socket);	//자식 프로세스 쪽에서는 s_socket을 사용할 일이 없기 때문에 닫아준다. 어차피 안닫으면 메모리만 먹는다.
-			// 어차피 통신은 c_socket을 이용
+		else if(pid==0){	//자식프로세스
+			close(s_socket);	//자식 프로세스 쪽에서는 s_socket을 사용할 일이 없기 때문에 닫아준다. 
+								// 어차피 안닫으도 실행은 되지만 메모리만 먹는다.
+								// 통신은 c_socket을 이용
 			do_service(c_socket);
+			exit(0);
+		}
+		else{	//fork()함수 실패
+			printf("fork() failed\n");
 			exit(0);
 		}
 	}
