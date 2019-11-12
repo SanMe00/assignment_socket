@@ -3,7 +3,9 @@
 #include <netinet/in.h>
 #include <sys/socket.h>
 #include <string.h>
-#include<stdlib.h>	//exit warning을 방지
+#include <stdlib.h>	// exit warning을 방지
+#include <signal.h> // signal 사용
+#include <sys/wait.h>
 
 #define PORT 10000
 #define BUFSIZE 10000
@@ -13,7 +15,10 @@ char rcvBf[BUFSIZE];
 // sizeof(buffer) => 100 배열의 크기를 의미
 // strlen(buffer) => 만약 hi라면 2. 내용의 길이를 의미
 
+int numClient=0;	//현재 접속중인 클라이언트의 수 관리
+
 void do_service(int c_socket);	//인자로 클라이언트 소켓을 받는다 ~이렇게하면 파이프통신 쓰지않는 이상 kill server 불가능!
+void sig_handler(int signo);
 
 int main(){
 	int c_socket, s_socket;
@@ -21,10 +26,9 @@ int main(){
 	int len;
 	int n;
 	
-	///char chlen_str[100]; //chlen을 write 하는 도중 sprintf을 위한 변수 
-	//int chcmp; //	strcmp -- 처리용
-	//int result;
-	//char cmp_str[100];	//cmp결과 담을 변수
+	signal(SIGCHLD, sig_handler);
+	// 첫 번째 인자: 시그널 번호
+	// 두 번째 인자: 첫번째 인자의 시그널이 발생했을 때 실행되는 함수명
 
 	// 1. 서버 소켓 생성
 	//서버 소켓 = 클라이언트의 접속 요청을 처리(허용)해 주기 위한 소켓
@@ -50,13 +54,13 @@ int main(){
 	}
 
 	//5. 클라이언트 요청 처리
-	// 요청을 허용한 후, Hello World 메세지를 전송함
 	while(1){
 		len = sizeof(c_addr);
 		printf("클라이언트 접속을 기다리는 중....\n");
 		c_socket = accept(s_socket, (struct sockaddr *)&c_addr, &len);
 		printf("/client is connected\n");
-		printf("클라이언트 접속 허용\n");
+		numClient++;	// 접속 해제 시의 경우도 생각해줘야한다.
+		printf("현재 접속 중인 클라이언트 수:  %d\n",numClient);
 		int pid=fork();
 		//클라이언트의 요청이 오면 허용(accept)해 주고, 해당 클라이언트와 통신할 수 있도록 클라이언트 소켓(c_socket)을 반환함.
 		if(pid>0){	//부모프로세스
@@ -68,6 +72,8 @@ int main(){
 								// 어차피 안닫으도 실행은 되지만 메모리만 먹는다.
 								// 통신은 c_socket을 이용
 			do_service(c_socket);
+			// 만약 이 위치에 numClient--;를 해줘도 증가만 된다. 그 이유는 부모와 자식 프로세스는 완전히 별개이다.
+			// 부모의 numClient와 자식의 numClient가 다르다!
 			exit(0);
 		}
 		else{	//fork()함수 실패
@@ -175,4 +181,14 @@ void do_service(int c_socket){
 		close(c_socket);
 }
 
+void sig_handler(int signo){
+	int pid;
+	int status;
+	pid = wait(&status);	//자식 프로세스가 종료할 때까지 기다리는 함수.
+	// 자식 프로세스가 종료되면 종료된 자식 프로세스의 pid반환, status에는 자식 프로세스의 종료 상태를 저장함.
+	// status=0 이면 종료된 것이다.
+	printf("pid[%d] is terminated.status = %d\n",pid,status);
+	numClient--;
+	printf("현재 접속 중인 클라이언트 수: %d\n",numClient);
+}
 
