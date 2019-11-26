@@ -76,15 +76,18 @@ void *do_chat(void *arg)
     int c_socket = *((int *)arg);
     char chatData[CHATDATA];
 	char wisper[CHATDATA];
+	char wis_result[CHATDATA];
     int i, n;
     while(1) {
         memset(chatData, 0, sizeof(chatData));
         if((n = read(c_socket, chatData, sizeof(chatData))) > 0) {
         		// 귓속말인 경우 ('/r')
 			write(1,"receive",strlen("receive"));
+			char *sender;
 			char *wis;
 			strcpy(wisper,chatData);
-			strtok(wisper," "); //[nickname]부분 제거
+			sender=strtok(wisper," "); //[nickname]부분 제거
+			
 			wis=strtok(NULL," "); // '/r'
         	if(!strncasecmp(wis,"/r",strlen("/r"))){
 				write(1,"wisper",strlen("wisper"));
@@ -95,7 +98,9 @@ void *do_chat(void *arg)
         		for(i=0;i<=MAX_CLIENT;i++){
         			if(!strncasecmp(list_c[i].nickname,nick,strlen(nick))){//지정한 대상에게만 글을 보이게
         				write(1,"receive",strlen("test"));
-						write(list_c[i].socket,chat,strlen(chat));
+						sprintf(wis_result,"[Wisper From.%s]",sender);
+						strcat(wis_result,chat);
+						write(list_c[i].socket,wis_result,strlen(wis_result));
         				}
         			}
         		}
