@@ -36,7 +36,9 @@ int main(int argc, char *argv[ ])
         printf("Can not connect\n");
         return -1;
     }
+	write(c_socket,nickname,strlen(nickname));
     //pthread_create with do_send function
+	//4번째 인자에 c_socket을 보이드포인터형으로 줘야한다.
 	pthread_create(&thread_1,NULL,do_send_chat,(void *)&c_socket);
     //pthread_create with do_receive_chat function
 	pthread_create(&thread_2,NULL,do_receive_chat,(void *)&c_socket);

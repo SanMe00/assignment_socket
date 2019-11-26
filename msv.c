@@ -7,7 +7,7 @@
 #include <pthread.h>
 
 void *do_chat(void *); //채팅 메세지를 보내는 함수
-int pushClient(int); //새로운 클라이언트가 접속했을 때 클라이언트 정보 추가
+int pushClient(char *,int); //새로운 클라이언트가 접속했을 때 클라이언트 정보 추가
 int popClient(int); //클라이언트가 종료했을 때 클라이언트 정보 삭제
 
 pthread_t thread;
@@ -17,8 +17,14 @@ pthread_mutex_t mutex;
 #define CHATDATA 1024
 #define INVALID_SOCK -1
 #define PORT 9000
+#define NICK 20
 
-int    list_c[MAX_CLIENT];
+typedef struct list_c{
+	int socket;
+	char nickname[NICK];
+};
+
+struct list_c list_c[MAX_CLIENT];
 char    escape[ ] = "exit";
 char    greeting[ ] = "Welcome to chatting room\n";
 char    CODE200[ ] = "Sorry No More Connection\n";
@@ -30,6 +36,7 @@ int main(int argc, char *argv[ ])
     int    len;
     int    i, j, n;
     int    res;
+	char nickname[NICK]; //임시로 닉네임 담아두는 변수
     if(pthread_mutex_init(&mutex, NULL) != 0) {
         printf("Can not create mutex\n");
         return -1;
@@ -48,11 +55,12 @@ int main(int argc, char *argv[ ])
         return -1;
     }
     for(i = 0; i < MAX_CLIENT; i++)
-        list_c[i] = INVALID_SOCK;
+        list_c[i].socket = INVALID_SOCK;
     while(1) {
         len = sizeof(c_addr);
         c_socket = accept(s_socket, (struct sockaddr *) &c_addr, &len);
-        res = pushClient(c_socket);
+		 read(c_socket,nickname,sizeof(nickname)); //nickname을 받아와서 설정 또한 해줘야 함
+        res = pushClient(nickname,c_socket);
         if(res < 0) { //MAX_CLIENT만큼 이미 클라이언트가 접속해 있다면,
             write(c_socket, CODE200, strlen(CODE200));
             close(c_socket);
@@ -67,19 +75,43 @@ void *do_chat(void *arg)
 {
     int c_socket = *((int *)arg);
     char chatData[CHATDATA];
+	char wisper[CHATDATA];
     int i, n;
     while(1) {
         memset(chatData, 0, sizeof(chatData));
         if((n = read(c_socket, chatData, sizeof(chatData))) > 0) {
-        	for(i=0;i<=MAX_CLIENT;i++){
-        		if(list_c[i]==INVALID_SOCK)
-        			continue;
-        		else if(list_c[i] != INVALID_SOCK){
-        			write(list_c[i],chatData,strlen(chatData)); 
+        		// 귓속말인 경우 ('/r')
+			write(1,"receive",strlen("receive"));
+			char *wis;
+			strcpy(wisper,chatData);
+			strtok(wisper," "); //[nickname]부분 제거
+			wis=strtok(NULL," "); // '/r'
+        	if(!strncasecmp(wis,"/r",strlen("/r"))){
+				write(1,"wisper",strlen("wisper"));
+				char *nick;
+				char *chat;
+        		nick=strtok(NULL," "); // 대상 유저
+        		chat=strtok(NULL,"\0"); // 귓속말 채팅부분
+        		for(i=0;i<=MAX_CLIENT;i++){
+        			if(!strncasecmp(list_c[i].nickname,nick,strlen(nick))){//지정한 대상에게만 글을 보이게
+        				write(1,"receive",strlen("test"));
+						write(list_c[i].socket,chat,strlen(chat));
+        				}
         			}
-        	}
+        		}
         	
-      //write chatData to all clients
+        	else{
+			//write chatData to all clients
+        	for(i=0;i<=MAX_CLIENT;i++){
+        		if(list_c[i].socket == INVALID_SOCK)
+        			continue;
+        		else if(list_c[i].socket != c_socket){ //이렇게 해야 자기 제외하고 보낸다
+        			write(list_c[i].socket,chatData,strlen(chatData));
+        				// list_c[i].list라고 해야 모든사용자에게 보내는 것이다.
+        			} //for문 종료
+        			}
+			}
+        	
 
             if(strstr(chatData, escape) != NULL) {
                 popClient(c_socket);
@@ -88,14 +120,15 @@ void *do_chat(void *arg)
         }
     }
 }
-int pushClient(int c_socket) {	//------개인과제 2
+int pushClient(char * nickname, int c_socket) {	//------개인과제 2
 	int i;
 	for(i=0;i<=MAX_CLIENT;i++){
-		if(list_c[i]==INVALID_SOCK){
-			list_c[i]=c_socket;
+		if(list_c[i].socket==INVALID_SOCK){
+			list_c[i].socket=c_socket;
+			strcpy(list_c[i].nickname,nickname);
 			return i;
 		}
-		else if(list_c[i] != INVALID_SOCK){
+		else if(list_c[i].socket != INVALID_SOCK){
 			continue;
 		}
 	}
@@ -110,11 +143,11 @@ int popClient(int c_socket)
 {
 	int i;
 	for(i=0;i<=MAX_CLIENT;i++){
-		if(list_c[i]==c_socket){
-			list_c[i]=INVALID_SOCK;
+		if(list_c[i].socket==c_socket){
+			list_c[i].socket=INVALID_SOCK;
 			close(c_socket);
 		}
-		else if(list_c[i] != c_socket){
+		else if(list_c[i].socket != c_socket){
 			continue;
 		}
 	}
